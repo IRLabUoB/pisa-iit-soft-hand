@@ -48,7 +48,7 @@ catkin_package(
 add_library(adaptive_transmission_loader_plugin
   src/adaptive_synergy_transmission_loader.cpp
 )
-add_dependencies(adaptive_transmission_loader_plugin transmission_interface_loader)
+# add_dependencies(adaptive_transmission_loader_plugin transmission_interface_loader)
 target_link_libraries(adaptive_transmission_loader_plugin ${catkin_LIBRARIES})
 
 add_library(${PROJECT_NAME} src/gazebo_ros_soft_hand_plugin.cpp)
