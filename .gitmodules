@@ -3,4 +3,4 @@
 	url = https://github.com/IRLabUoB/qbAPI.git
 [submodule "hand-tools/qbadmin"]
 	path = hand-tools/qbadmin
-	url = https://github.com/NMMI/qbadmin.git
+	url = https://github.com/IRLabUoB/qbadmin.git
