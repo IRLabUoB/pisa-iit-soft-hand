@@ -1,6 +1,6 @@
 [submodule "hand-tools/qbAPI"]
 	path = hand-tools/qbAPI
-	url = https://github.com/eaa3/qbAPI.git
+	url = https://github.com/IRLabUoB/qbAPI.git
 [submodule "hand-tools/qbadmin"]
 	path = hand-tools/qbadmin
 	url = https://github.com/NMMI/qbadmin.git
