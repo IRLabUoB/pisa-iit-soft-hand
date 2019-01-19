@@ -36,3 +36,5 @@ BUILD
 *.kdev4
 .kdev_include_paths
 .DS_Store
+.vscode
+get_joints.py

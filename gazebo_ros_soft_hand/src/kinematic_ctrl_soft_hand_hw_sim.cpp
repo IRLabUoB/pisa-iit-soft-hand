@@ -172,7 +172,7 @@ bool KinematicCtrlSoftHandHWSim::initSim(
 
   // Decide what kind of command interface the synergy joint has
   hardware_interface::JointHandle synergy_handle;
-  if(hardware_interface_syn == "EffortJointInterface")
+  if(hardware_interface_syn == "hardware_interface/EffortJointInterface")
   {
     // Create effort joint interface
     synergy_control_method_ = EFFORT;
@@ -181,7 +181,7 @@ bool KinematicCtrlSoftHandHWSim::initSim(
 
     ej_interface_.registerHandle(synergy_handle);
   }
-  else if(hardware_interface_syn == "PositionJointInterface")
+  else if(hardware_interface_syn == "hardware_interface/PositionJointInterface")
   {
     // Create position joint interface
     synergy_control_method_ = POSITION;
@@ -189,7 +189,7 @@ bool KinematicCtrlSoftHandHWSim::initSim(
                                                    &synergy_position_command_);
     pj_interface_.registerHandle(synergy_handle);
   }
-  else if(hardware_interface_syn == "VelocityJointInterface")
+  else if(hardware_interface_syn == "hardware_interface/VelocityJointInterface")
   {
     // Create velocity joint interface
     synergy_control_method_ = VELOCITY;
@@ -291,7 +291,7 @@ bool KinematicCtrlSoftHandHWSim::initSim(
 
     // take the first of the first
     const std::string& hardware_interface = adaptive_trans_info.joints_[0].hardware_interfaces_[0];
-
+    ROS_INFO("Interface: %s",hardware_interface.c_str());
     // Debug
     ROS_DEBUG_STREAM_NAMED("default_soft_hand_hw_sim","Loading joint '" << joint_names_[j]
       << "' of type '" << hardware_interface << "'");
@@ -302,7 +302,7 @@ bool KinematicCtrlSoftHandHWSim::initSim(
 
     // Decide what kind of command interface the synergy joint has
     hardware_interface::JointHandle joint_handle;
-    if(hardware_interface == "EffortJointInterface")
+    if(hardware_interface == "hardware_interface/EffortJointInterface")
     {
       // Create effort joint interface
       joint_control_methods_[j] = EFFORT;
@@ -310,7 +310,7 @@ bool KinematicCtrlSoftHandHWSim::initSim(
                                                      &joint_effort_command_[j]);
       ej_interface_.registerHandle(joint_handle);*/
     }
-    else if(hardware_interface == "PositionJointInterface")
+    else if(hardware_interface == "hardware_interface/PositionJointInterface")
     {
       // Create position joint interface
       joint_control_methods_[j] = POSITION;

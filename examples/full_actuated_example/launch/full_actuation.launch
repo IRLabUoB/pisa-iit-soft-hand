@@ -18,10 +18,10 @@
     <!-- load the full robot in robot_description, useful for visualization, collision detection and planning simultaneously -->
     <!-- the selection is only due to the hand visualization which is different in real and simulation -->
     <group if="$(arg use_robot_sim)">
-        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find adaptive_example)/robot/soft_hand_full_actuation.urdf.xacro use_mimic_tag:=false"/>
+        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find full_actuated_example)/robot/soft_hand_full_actuation.urdf.xacro use_mimic_tag:=false"/>
     </group>
     <group unless="$(arg use_robot_sim)">
-        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find adaptive_example)/robot/soft_hand_full_actuation.urdf.xacro use_mimic_tag:=true"/>
+        <param name="robot_description" command="$(find xacro)/xacro --inorder $(find full_actuated_example)/robot/soft_hand_full_actuation.urdf.xacro use_mimic_tag:=true"/>
     </group>
 
     <group if="$(arg use_joint_state_publisher)">
@@ -35,11 +35,11 @@
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"  />
 
     <group if="$(arg use_rviz)">
-        <node name="my_rviz" pkg="rviz" type="rviz" respawn="false" args="-d $(find adaptive_example)/launch/my_rviz.rviz" output="screen"/>
+        <node name="my_rviz" pkg="rviz" type="rviz" respawn="false" args="-d $(find full_actuated_example)/launch/my_rviz.rviz" output="screen"/>
     </group>
 
     <!-- load controller configurations -->
-    <rosparam file="$(find adaptive_example)/config/controllers.yaml" command="load"/>
+    <rosparam file="$(find full_actuated_example)/config/soft_hand_full_control.yaml" command="load"/>
 
     <!-- #### simulation -->
     <group if="$(arg use_robot_sim)">
@@ -48,7 +48,7 @@
 
         <!-- load Gazebo simulation environment -->
         <include file="$(find gazebo_ros)/launch/empty_world.launch">
-            <arg name="world_name" value="$(find adaptive_example)/worlds/simple_environment.world"/>
+            <arg name="world_name" value="$(find full_actuated_example)/worlds/simple_environment.world"/>
             <arg name="paused" value="false"/>
             <!-- when using the real/sim scenario in parallel, set "use_sim_time" to false -->
             <arg name="use_sim_time" value="true"/>
@@ -62,9 +62,9 @@
     <group ns="soft_hand">
       <group if="$(arg soft_hand_enabled)">
           <!--add a copy of the robot description within the name space -->
-          <param name="robot_description" command="$(find xacro)/xacro --inorder $(find adaptive_example)/robot/soft_hand_full_actuation.urdf.xacro use_mimic_tag:=true"/>
+          <param name="robot_description" command="$(find xacro)/xacro --inorder $(find full_actuated_example)/robot/soft_hand_full_actuation.urdf.xacro use_mimic_tag:=true"/>
 
-          <rosparam command="load"s file="$(find adaptive_example)/config/joint_names.yaml" />
+          <rosparam command="load" file="$(find full_actuated_example)/config/joint_names.yaml" />
 
           <include file="$(find soft_hand_ros_control)/launch/soft_hand_hw.launch">
               <arg name="use_deafult_joint_names" value="false"/>
@@ -72,9 +72,52 @@
           </include>
       </group>
 
-      <!-- load the controllers in current namespace -->
-      <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="true" output="screen"  args="joint_state_controller joint_trajectory_controller"/>
 
+
+
+      <!-- load the controllers in current namespace -->
+
+      <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="true"
+    output="screen" args="
+    joint_state_controller
+    joint_trajectory_controller"
+  />
+  <!-- 
+      hand_thumb_abd_joint_position_controller
+    hand_thumb_inner_joint_position_controller
+    hand_thumb_outer_joint_position_controller
+    hand_index_abd_joint_position_controller
+    hand_index_inner_joint_position_controller
+    hand_index_middle_joint_position_controller
+    hand_index_outer_joint_position_controller
+    hand_middle_abd_joint_position_controller
+    hand_middle_inner_joint_position_controller
+    hand_middle_middle_joint_position_controller
+    hand_middle_outer_joint_position_controller
+    hand_ring_abd_joint_position_controller
+    hand_ring_inner_joint_position_controller
+    hand_ring_middle_joint_position_controller
+    hand_ring_outer_joint_position_controller
+    hand_little_abd_joint_position_controller
+    hand_little_inner_joint_position_controller
+    hand_little_middle_joint_position_controller
+    hand_little_outer_joint_position_controller
+    hand_thumb_inner_joint_mimic_position_controller
+    hand_thumb_outer_joint_mimic_position_controller
+    hand_index_inner_joint_mimic_position_controller
+    hand_index_middle_joint_mimic_position_controller
+    hand_index_outer_joint_mimic_position_controller
+    hand_middle_inner_joint_mimic_position_controller
+    hand_middle_middle_joint_mimic_position_controller
+    hand_middle_outer_joint_mimic_position_controller
+    hand_ring_inner_joint_mimic_position_controller
+    hand_ring_middle_joint_mimic_position_controller
+    hand_ring_outer_joint_mimic_position_controller
+    hand_little_inner_joint_mimic_position_controller
+    hand_little_middle_joint_mimic_position_controller
+    hand_little_outer_joint_mimic_position_controller
+  
+  -->
       <!-- grasp estimator -->
       <group if="$(arg use_grasp_estimator)">
         <rosparam command="load" file="$(find grasp_state_publisher)/config/softgrasp.yaml" />

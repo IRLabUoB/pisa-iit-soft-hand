@@ -43,3 +43,15 @@ target_link_libraries(soft_hand_hw
     ${catkin_LIBRARIES}
     qbmove
 )
+
+# the ROS-driver with Glove Sensor
+add_executable(soft_hand_hw_sensorised
+    src/soft_hand_hw_sensorised.cpp
+)
+add_dependencies(soft_hand_hw_sensorised
+    qbmove
+)
+target_link_libraries(soft_hand_hw_sensorised
+    ${catkin_LIBRARIES}
+    qbmove
+)

@@ -38,11 +38,50 @@ void quitRequested(int sig) {
 namespace soft_hand_hw
 { 
 
-  class SHHW : public hardware_interface::RobotHW
+  class GloveWrapper {
+
+    private:
+
+      std::string fifo_path_;
+      FILE* fd_;
+
+      float fs_[6]; // Finger state from thumb to little finger (including time stamp, which is the last value)
+
+
+    public:
+
+      //typedef std::Ptr<GloveWrapper> Ptr;
+
+
+      GloveWrapper(const std::string& fifo_path = "/tmp/obi_glove_device_fifo"){
+
+        fifo_path_ = fifo_path;
+
+        fd_ = fopen(fifo_path_.c_str(),"r");
+
+      }
+
+     ~GloveWrapper(){
+       fclose(fd_);
+     }
+
+
+      void read(float* state){
+
+        fscanf(fd_,"%f, %f, %f, %f, %f, %f",&fs_[0], &fs_[1], &fs_[2], &fs_[3], &fs_[4], &fs_[5]);
+        memcpy(state, fs_, sizeof(float)*6);
+
+      }
+
+
+  };
+
+
+  class SHHWSensorised : public hardware_interface::RobotHW
   {
   public:
     // from RobotHW
-    SHHW(ros::NodeHandle nh);
+    SHHWSensorised(ros::NodeHandle nh);
     bool start();
     bool read(ros::Time time, ros::Duration period);
     void write(ros::Time time, ros::Duration period);
@@ -111,7 +150,7 @@ namespace soft_hand_hw
 
     };
 
-    boost::shared_ptr<SHHW::SHRDevice> device_;
+    boost::shared_ptr<SHHWSensorised::SHRDevice> device_;
 
   private:
 
@@ -134,19 +173,22 @@ namespace soft_hand_hw
     joint_limits_interface::EffortJointSaturationInterface ej_sat_interface_;
     joint_limits_interface::EffortJointSoftLimitsInterface ej_limits_interface_;
 
+    GloveWrapper data_glove_;
+    float glove_state_[6];
+
   protected:
 
-  }; // SHHW class
+  }; // SHHWSensorised class
 
-  SHHW::SHHW(ros::NodeHandle nh) :
+  SHHWSensorised::SHHWSensorised(ros::NodeHandle nh) :
     nh_(nh)
   {}
 
-  bool SHHW::start()
+  bool SHHWSensorised::start()
   {
 
     // construct a new lwr device (interface and state storage)
-    this->device_.reset( new SHHW::SHRDevice() );
+    this->device_.reset( new SHHWSensorised::SHRDevice() );
 
      nh_.param("device_id", device_id_, BROADCAST_ID);
 
@@ -243,7 +285,7 @@ namespace soft_hand_hw
 
   }
 
-  bool SHHW::read(ros::Time time, ros::Duration period)
+  bool SHHWSensorised::read(ros::Time time, ros::Duration period)
   {
       // update the hand synergy joints
       // read from hand
@@ -256,12 +298,20 @@ namespace soft_hand_hw
       // fill the state variables
 
 
+      // data_glove_.read(glove_state_);
+
+      // float mean_state = 0.0;
+      // for(int i = 0; i < 5; i++){
+      //   mean_state += glove_state_[i];
+      // }
+      // mean_state /= 5.0;
+
 
       for (int j = 0; j < N_SYN; j++)
       {
           
           this->device_->joint_position_prev[j] = this->device_->joint_position[j];
-          this->device_->joint_position[j] = inputs[0]/17000.0; 
+          this->device_->joint_position[j] = inputs[0]/17000.0; //mean_state;
           this->device_->joint_effort[j] = currents[0]*1.0;
           this->device_->joint_velocity[j] = filters::exponentialSmoothing((this->device_->joint_position[j]-this->device_->joint_position_prev[j])/period.toSec(), this->device_->joint_velocity[j], 0.2);
       }
@@ -269,7 +319,7 @@ namespace soft_hand_hw
       return true;
   }
 
-  void SHHW::write(ros::Time time, ros::Duration period)
+  void SHHWSensorised::write(ros::Time time, ros::Duration period)
     {
         static int warning = 0;
 
@@ -285,7 +335,7 @@ namespace soft_hand_hw
         return;
     }
 
-    void SHHW::stop()
+    void SHHWSensorised::stop()
     {
       usleep(2000000);
       // Deactivate motors
@@ -293,7 +343,7 @@ namespace soft_hand_hw
       closeRS485(&comm_settings_t_);
     }
 
-    void SHHW::set_mode()
+    void SHHWSensorised::set_mode()
     {
         // the hand does not have something like this, anyway it is left here to keep the template
         return;
@@ -302,7 +352,7 @@ namespace soft_hand_hw
   // Register the limits of the joint specified by joint_name and\ joint_handle. The limits are
   // retrieved from the urdf_model.
   // Return the joint's type, lower position limit, upper position limit, and effort limit.
-  void SHHW::registerJointLimits(const std::string& joint_name,
+  void SHHWSensorised::registerJointLimits(const std::string& joint_name,
                            const hardware_interface::JointHandle& joint_handle,
                            const urdf::Model *const urdf_model,
                            double *const lower_limit, double *const upper_limit, 
@@ -354,7 +404,7 @@ namespace soft_hand_hw
   }
 
   // port selection by id
-  int SHHW::port_selection(const int id, char* my_port)
+  int SHHWSensorised::port_selection(const int id, char* my_port)
   {
     int num_ports = 0;
     char ports[10][255];
@@ -418,7 +468,7 @@ namespace soft_hand_hw
     }
   }
 
-  int SHHW::open_port(char* port) 
+  int SHHWSensorised::open_port(char* port) 
   {
     ROS_DEBUG_STREAM("Opening serial port: " << port << " for hand_id: " << device_id_);
     fflush(stdout);
@@ -435,7 +485,7 @@ namespace soft_hand_hw
     return 1;
   }
 
-  void SHHW::set_input(short int pos)
+  void SHHWSensorised::set_input(short int pos)
   {
     static short int inputs[2];
 
@@ -463,7 +513,7 @@ int main( int argc, char** argv )
 
   // construct the lwr
   ros::NodeHandle sh_nh("");
-  soft_hand_hw::SHHW sh_robot(sh_nh);
+  soft_hand_hw::SHHWSensorised sh_robot(sh_nh);
 
   // configuration routines
   sh_robot.start();

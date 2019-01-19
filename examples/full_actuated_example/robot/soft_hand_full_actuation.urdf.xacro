@@ -27,7 +27,7 @@
 	</gazebo>
 
 	<xacro:soft_hand parent="box" name="soft_hand" left="false" withAdaptiveTransmission="false" useMimicTag="$(arg use_mimic_tag)">
-		<origin xyz="0.002 0.009 0.038" rpy="0 0 0"/>
+		<origin xyz="0.0 0.0 1.02" rpy="0 0 0"/>
 	</xacro:soft_hand>
 
 </robot>

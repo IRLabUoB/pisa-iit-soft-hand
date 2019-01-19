@@ -131,13 +131,13 @@ bool DefaultSoftHandHWSim::initSim(
 
   // The synergy joint only accepts PositionJointInterface, since this is how tipically the hand motor is controlled from ROS
   hardware_interface::JointHandle synergy_handle;
-  if(hardware_interface_syn == "EffortJointInterface")
+  if(hardware_interface_syn == "hardware_interface/EffortJointInterface")
   {
     ROS_ERROR_STREAM("The synergy joint \"" << synergy_name_
       << " only accepts PositionJointInterface. Check the transmission defintion.");
     return false;
   }
-  else if(hardware_interface_syn == "PositionJointInterface")
+  else if(hardware_interface_syn == "hardware_interface/PositionJointInterface")
   {
     // Create position joint interface
     synergy_control_method_ = POSITION;
@@ -145,7 +145,7 @@ bool DefaultSoftHandHWSim::initSim(
                                                    &synergy_position_command_);
     pj_interface_.registerHandle(synergy_handle);
   }
-  else if(hardware_interface_syn == "VelocityJointInterface")
+  else if(hardware_interface_syn == "hardware_interface/VelocityJointInterface")
   {
     ROS_ERROR_STREAM("The synergy joint \"" << synergy_name_
       << " only accepts PositionJointInterface. Check the transmission defintion.");
@@ -259,6 +259,8 @@ bool DefaultSoftHandHWSim::initSim(
     // Debug
     ROS_DEBUG_STREAM_NAMED("default_soft_hand_hw_sim","Loading joint '" << joint_names_[j]
       << "' of type '" << hardware_interface << "'");
+  
+    ROS_INFO("Loading joint %s of type %s",joint_names_[j].c_str(), hardware_interface.c_str());
 
     // Create joint state interface for all joints
     js_interface_.registerHandle(hardware_interface::JointStateHandle(
@@ -268,7 +270,7 @@ bool DefaultSoftHandHWSim::initSim(
     // and even when it is not controlled from outside, we register the joint limits to ensure
     // values are within the limits
     hardware_interface::JointHandle joint_handle;
-    if(hardware_interface == "EffortJointInterface")
+    if(hardware_interface == "hardware_interface/EffortJointInterface")
     {
       // Create effort joint interface
       joint_control_methods_[j] = EFFORT;
@@ -277,7 +279,7 @@ bool DefaultSoftHandHWSim::initSim(
 
       ej_interface_.registerHandle(joint_handle);
     }
-    else if(hardware_interface == "PositionJointInterface")
+    else if(hardware_interface == "hardware_interface/PositionJointInterface")
     {
       // Create position joint interface, though it is not used for now
       joint_control_methods_[j] = POSITION;
