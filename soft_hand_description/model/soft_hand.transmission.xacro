@@ -3,8 +3,8 @@
 <robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
     <xacro:property name="Interface30" value="hardware_interface/PositionJointInterface"/>
-		<xacro:property name="Interface10" value="hardware_interface/PositionJointInterface"/>
-    <xacro:property name="Interface40" value="hardware_interface/EffortJointInterface"/>
+		<xacro:property name="Interface40" value="hardware_interface/PositionJointInterface"/>
+    <xacro:property name="Interface10" value="hardware_interface/EffortJointInterface"/>
     <xacro:macro name="finger_transmission" params="name finger">
 
         

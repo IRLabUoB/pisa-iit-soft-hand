@@ -26,6 +26,9 @@
 #include "qbmove_communications.h"
 #include "soft_hand_ros_control/definitions.h"
 
+#include <utility>
+#include <map>
+
 // just thinking of any time in the future the soft hand might have more than one synergy
 #define N_SYN 1
 
@@ -45,7 +48,7 @@ namespace soft_hand_hw
       std::string fifo_path_;
       FILE* fd_;
 
-      float fs_[6]; // Finger state from thumb to little finger (including time stamp, which is the last value)
+      double fs_[11]; // Finger state from thumb to little finger (including time stamp, which is the last value)
 
 
     public:
@@ -66,10 +69,11 @@ namespace soft_hand_hw
      }
 
 
-      void read(float* state){
+      void read(double* state){
 
-        fscanf(fd_,"%f, %f, %f, %f, %f, %f",&fs_[0], &fs_[1], &fs_[2], &fs_[3], &fs_[4], &fs_[5]);
-        memcpy(state, fs_, sizeof(float)*6);
+        fscanf(fd_,"%lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf",&fs_[0], &fs_[1], &fs_[2], &fs_[3], &fs_[4], 
+                                            &fs_[5], &fs_[6], &fs_[7], &fs_[8], &fs_[9], &fs_[10]);
+        memcpy(state, fs_, sizeof(double)*11);
 
       }
 
@@ -120,28 +124,32 @@ namespace soft_hand_hw
         joint_effort,
         joint_position_command;
 
-      void init()
+      void init(int n_dof = N_SYN)
       {
-        joint_position.resize(N_SYN);
-        joint_position_prev.resize(N_SYN);
-        joint_velocity.resize(N_SYN);
-        joint_effort.resize(N_SYN);
+        joint_position.resize(n_dof);
+        joint_position_prev.resize(n_dof);
+        joint_velocity.resize(n_dof);
+        joint_effort.resize(n_dof);
         joint_position_command.resize(N_SYN);
  
-        joint_lower_limits.resize(N_SYN);
-        joint_upper_limits.resize(N_SYN);
-        joint_effort_limits.resize(N_SYN);
+        joint_lower_limits.resize(n_dof);
+        joint_upper_limits.resize(n_dof);
+        joint_effort_limits.resize(n_dof);
       }
 
       // reset values
       void reset() 
       {
-        for (int j = 0; j < N_SYN; ++j)
+        for (int j = 0; j < joint_position.size(); ++j)
         {
           joint_position[j] = 0.0;
           joint_position_prev[j] = 0.0;
           joint_velocity[j] = 0.0;
           joint_effort[j] = 0.0;
+        }
+
+        for (int j = 0; j < N_SYN; ++j)
+        {
           joint_position_command[j] = 0.0;
         }
       }
@@ -174,7 +182,7 @@ namespace soft_hand_hw
     joint_limits_interface::EffortJointSoftLimitsInterface ej_limits_interface_;
 
     GloveWrapper data_glove_;
-    float glove_state_[6];
+    double glove_state_[11];
 
   protected:
 
@@ -190,13 +198,14 @@ namespace soft_hand_hw
     // construct a new lwr device (interface and state storage)
     this->device_.reset( new SHHWSensorised::SHRDevice() );
 
-     nh_.param("device_id", device_id_, BROADCAST_ID);
-
+    nh_.param("device_id", device_id_, BROADCAST_ID);
+    
     // TODO: use transmission configuration to get names directly from the URDF model
     if( ros::param::get("joints", this->device_->joint_names) )
     {
       if( !(this->device_->joint_names.size()==N_SYN) )
       {
+        // that's fine for the sensorised case
         ROS_ERROR("This robot has 1 joint, you must specify 1 name only until more synergies are not included");
       } 
     }
@@ -205,6 +214,8 @@ namespace soft_hand_hw
       ROS_ERROR("No joints to be handled, ensure you load a yaml file naming the joint names this hardware interface refers to.");
       throw std::runtime_error("No joint name specification");
     }
+
+
     if( !(urdf_model_.initParam("robot_description")) )
     {
       ROS_ERROR("No URDF model in the robot_description parameter, this is required to define the joint limits.");
@@ -212,14 +223,14 @@ namespace soft_hand_hw
     }
 
     // initialize and set to zero the state and command values
-    this->device_->init();
+    this->device_->init(this->device_->joint_names.size());
     this->device_->reset();
 
     // general joint to store information
     boost::shared_ptr<const urdf::Joint> joint;
 
     // create joint handles given the list
-    for(int i = 0; i < N_SYN; ++i)
+    for(int i = 0; i < this->device_->joint_names.size(); ++i)
     {
       ROS_INFO_STREAM("Handling joint: " << this->device_->joint_names[i]);
 
@@ -239,19 +250,29 @@ namespace soft_hand_hw
 
       state_interface_.registerHandle(state_handle);
 
+
+      // First joint is the synergy joint (which is also the only commanded joint)
       // effort command handle
-      hardware_interface::JointHandle joint_handle = hardware_interface::JointHandle(
+
+   //   if( i == 0 ){
+
+          hardware_interface::JointHandle joint_handle = hardware_interface::JointHandle(
             state_interface_.getHandle(this->device_->joint_names[i]),
             &this->device_->joint_position_command[i]);
 
-      position_interface_.registerHandle(joint_handle);
+          position_interface_.registerHandle(joint_handle);
 
-      registerJointLimits(this->device_->joint_names[i],
+          registerJointLimits(this->device_->joint_names[i],
                           joint_handle,
                           &urdf_model_,
                           &this->device_->joint_lower_limits[i],
                           &this->device_->joint_upper_limits[i],
                           &this->device_->joint_effort_limits[i]);
+
+     // }
+      
+
+      
     }
 
     ROS_INFO("Register state and position interfaces");
@@ -298,22 +319,44 @@ namespace soft_hand_hw
       // fill the state variables
 
 
-      // data_glove_.read(glove_state_);
+      data_glove_.read(glove_state_);
 
-      // float mean_state = 0.0;
-      // for(int i = 0; i < 5; i++){
-      //   mean_state += glove_state_[i];
-      // }
-      // mean_state /= 5.0;
+      float mean_state = 0.0;
+      for(int i = 0; i < 5; i++){
+        mean_state += glove_state_[i];
+      }
+      mean_state /= 5.0;
+    
 
+      std::map<int, std::pair<int,int> > joint_idx_map;
+      joint_idx_map[0] = std::make_pair(1,4);
+      joint_idx_map[1] = std::make_pair(4,8);
+      joint_idx_map[2] = std::make_pair(8,12);
+      joint_idx_map[3] = std::make_pair(12,16);
+      joint_idx_map[4] = std::make_pair(16,20);
 
-      for (int j = 0; j < N_SYN; j++)
+      this->device_->joint_position[0] = inputs[0]/17000.0; //synergy
+      this->device_->joint_position_prev[0] = this->device_->joint_position[0]; //synergy
+      for(int j = 0; j < 5; j++){
+
+          std::pair<int,int> ids = joint_idx_map[j];
+
+          for(int k = ids.first; k < ids.second; k++){
+
+              // Not setting abd joints, except for thumb
+              if(this->device_->joint_names[k].find("abd") == std::string::npos || this->device_->joint_names[k].find("thumb") != std::string::npos){
+                  this->device_->joint_position_prev[k] = this->device_->joint_position[k];
+                  this->device_->joint_position[k] = glove_state_[j]; //mean_state;
+                  this->device_->joint_effort[k] = currents[0]*1.0;
+              }
+          }
+      }
+
+      for (int j = 0; j < this->device_->joint_names.size(); j++)
       {
-          
-          this->device_->joint_position_prev[j] = this->device_->joint_position[j];
-          this->device_->joint_position[j] = inputs[0]/17000.0; //mean_state;
-          this->device_->joint_effort[j] = currents[0]*1.0;
+
           this->device_->joint_velocity[j] = filters::exponentialSmoothing((this->device_->joint_position[j]-this->device_->joint_position_prev[j])/period.toSec(), this->device_->joint_velocity[j], 0.2);
+         
       }
 
       return true;

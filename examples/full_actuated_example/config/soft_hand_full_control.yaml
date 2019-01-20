@@ -4,6 +4,11 @@ soft_hand:
     type: joint_state_controller/JointStateController
     publish_rate: 100
 
+  # hand_soft_hand_synergy_joint_position_controller:
+  #   type: position_controllers/JointPositionController
+  #   joint: soft_hand_synergy_joint
+  #   pid: {p: 1.0, i: 0.1, d: 0.5}
+    
   # Position Controllers ---------------------------------------
   hand_thumb_abd_joint_position_controller:
     type: position_controllers/JointPositionController
