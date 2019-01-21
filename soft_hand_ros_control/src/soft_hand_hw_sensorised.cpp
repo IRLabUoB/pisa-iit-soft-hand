@@ -8,6 +8,7 @@
 #include <ros/ros.h>
 #include <controller_manager/controller_manager.h>
 #include <std_msgs/Duration.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <joint_limits_interface/joint_limits.h>
@@ -47,6 +48,8 @@ namespace soft_hand_hw
 
       std::string fifo_path_;
       FILE* fd_;
+
+      
 
       double fs_[11]; // Finger state from thumb to little finger (including time stamp, which is the last value)
 
@@ -183,6 +186,7 @@ namespace soft_hand_hw
 
     GloveWrapper data_glove_;
     double glove_state_[11];
+    ros::Publisher glove_raw_publisher_;
 
   protected:
 
@@ -190,7 +194,11 @@ namespace soft_hand_hw
 
   SHHWSensorised::SHHWSensorised(ros::NodeHandle nh) :
     nh_(nh)
-  {}
+  {
+      glove_raw_publisher_ = nh_.advertise<std_msgs::Float64MultiArray>("raw_glove_state",1);
+
+
+  }
 
   bool SHHWSensorised::start()
   {
@@ -322,10 +330,18 @@ namespace soft_hand_hw
       data_glove_.read(glove_state_);
 
       float mean_state = 0.0;
-      for(int i = 0; i < 5; i++){
-        mean_state += glove_state_[i];
+
+      std_msgs::Float64MultiArray raw_readings;
+      raw_readings.data.resize(11);
+      
+      for(int i = 0; i < 11; i++){
+        raw_readings.data[i] = glove_state_[i];
       }
-      mean_state /= 5.0;
+    //   for(int i = 0; i < 5; i++){
+    //     mean_state += glove_state_[i];
+        
+    //   }
+    //   mean_state /= 5.0;
     
 
       std::map<int, std::pair<int,int> > joint_idx_map;
@@ -358,6 +374,8 @@ namespace soft_hand_hw
           this->device_->joint_velocity[j] = filters::exponentialSmoothing((this->device_->joint_position[j]-this->device_->joint_position_prev[j])/period.toSec(), this->device_->joint_velocity[j], 0.2);
          
       }
+
+      this->glove_raw_publisher_.publish(raw_readings);
 
       return true;
   }
