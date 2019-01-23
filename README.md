@@ -11,7 +11,7 @@ Unless stated otherwise, all files within the repository are released under the 
 
 ## Cloning the repository
 ```
-git clone --recursive https://github.com/CentroEPiaggio/pisa-iit-soft-hand.git
+git clone --recursive https://github.com/IRLabUoB/pisa-iit-soft-hand.git
 ```
 
 ## Dependencies
@@ -19,7 +19,7 @@ git clone --recursive https://github.com/CentroEPiaggio/pisa-iit-soft-hand.git
 ToDo: Create a travis.yml file for this.
 
 ## Examples
-There are several [examples](https://github.com/CentroEPiaggio/pisa-iit-soft-hand/tree/master/examples) that show how the hand can be used in different configurations.
+There are several [examples](https://github.com/IRLabUoB/pisa-iit-soft-hand/tree/master/examples) that show how the hand can be used in different configurations.
 
 ###Push the finger (Not implemented)
 
@@ -41,6 +41,6 @@ And clear the wrench in case you want to continue working normally
 
 These packages assume you use qbTools to move the hand, since it is the electronics the hand is sold with.
 
-To set-up the hand, refer to the instructions by [NMMI](https://github.com/NMMI/qbadmin).
+To set-up the hand, refer to the instructions by [NMMI](https://github.com/IRLabUoB/qbadmin).
 
 The interface is now shared between the `SoftHand` and `qbMove` devices.
