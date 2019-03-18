@@ -44,17 +44,24 @@ namespace soft_hand_hw
 
   class GloveWrapper {
 
+    public:
+    
+    static const int GLOVE_STATE_SIZE = 24;
+
     private:
 
       std::string fifo_path_;
       FILE* fd_;
 
       
-
-      double fs_[11]; // Finger state from thumb to little finger (including time stamp, which is the last value)
+      // format
+      // flag, x, y, z, b0, b1, b2, b3, b4, f0, f1, f2, f3, f4, rawf0, rawf1, rawf2, rawf3, rawf4, qx, qy, qz, qw, timestamp
+      double fs_[GLOVE_STATE_SIZE]; // Finger state from thumb to little finger (including time stamp, which is the last value)
 
 
     public:
+
+      
 
       //typedef std::Ptr<GloveWrapper> Ptr;
 
@@ -74,9 +81,13 @@ namespace soft_hand_hw
 
       void read(double* state){
 
-        fscanf(fd_,"%lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf",&fs_[0], &fs_[1], &fs_[2], &fs_[3], &fs_[4], 
-                                            &fs_[5], &fs_[6], &fs_[7], &fs_[8], &fs_[9], &fs_[10]);
-        memcpy(state, fs_, sizeof(double)*11);
+        fscanf(fd_,"%lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf",
+                                            &fs_[0], &fs_[1], &fs_[2], &fs_[3], 
+                                            &fs_[4], &fs_[5], &fs_[6], &fs_[7], &fs_[8], 
+                                            &fs_[9], &fs_[10], &fs_[11], &fs_[12], &fs_[13],
+                                            &fs_[14], &fs_[15], &fs_[16], &fs_[17], &fs_[18],
+                                            &fs_[19], &fs_[20], &fs_[21], &fs_[22], &fs_[23]);
+        memcpy(state, fs_, sizeof(double)*24);
 
       }
 
@@ -185,7 +196,7 @@ namespace soft_hand_hw
     joint_limits_interface::EffortJointSoftLimitsInterface ej_limits_interface_;
 
     GloveWrapper data_glove_;
-    double glove_state_[11];
+    double glove_state_[GloveWrapper::GLOVE_STATE_SIZE];
     ros::Publisher glove_raw_publisher_;
 
   protected:
@@ -332,9 +343,9 @@ namespace soft_hand_hw
       float mean_state = 0.0;
 
       std_msgs::Float64MultiArray raw_readings;
-      raw_readings.data.resize(11);
+      raw_readings.data.resize(GloveWrapper::GLOVE_STATE_SIZE);
       
-      for(int i = 0; i < 11; i++){
+      for(int i = 0; i < GloveWrapper::GLOVE_STATE_SIZE; i++){
         raw_readings.data[i] = glove_state_[i];
       }
     //   for(int i = 0; i < 5; i++){
@@ -362,7 +373,7 @@ namespace soft_hand_hw
               // Not setting abd joints, except for thumb
               if(this->device_->joint_names[k].find("abd") == std::string::npos || this->device_->joint_names[k].find("thumb") != std::string::npos){
                   this->device_->joint_position_prev[k] = this->device_->joint_position[k];
-                  this->device_->joint_position[k] = glove_state_[j]; //mean_state;
+                  this->device_->joint_position[k] = glove_state_[j+9]; //mean_state;
                   this->device_->joint_effort[k] = currents[0]*1.0;
               }
           }
