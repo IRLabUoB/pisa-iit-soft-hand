@@ -371,9 +371,22 @@ namespace soft_hand_hw
           for(int k = ids.first; k < ids.second; k++){
 
               // Not setting abd joints, except for thumb
-              if(this->device_->joint_names[k].find("abd") == std::string::npos || this->device_->joint_names[k].find("thumb") != std::string::npos){
+              bool is_thumb = this->device_->joint_names[k].find("thumb") != std::string::npos;
+              bool is_abd_joint = this->device_->joint_names[k].find("abd") != std::string::npos;
+              if( !is_abd_joint || is_thumb ){
                   this->device_->joint_position_prev[k] = this->device_->joint_position[k];
-                  this->device_->joint_position[k] = glove_state_[j+9]; //mean_state;
+                  
+                  if(is_thumb && k == 1)
+                  {
+                    this->device_->joint_position[k] =  filters::exponentialSmoothing(glove_state_[j+9]*2.25, this->device_->joint_position_prev[k], 0.2);
+                  }
+                  else if(is_thumb){
+                    this->device_->joint_position[k] =  filters::exponentialSmoothing(glove_state_[j+9]*0.8, this->device_->joint_position_prev[k], 0.2);
+                  }
+                  else{
+                    this->device_->joint_position[k] = filters::exponentialSmoothing(glove_state_[j+9], this->device_->joint_position_prev[k], 0.2);//glove_state_[j+9]; //mean_state;
+                  }
+
                   this->device_->joint_effort[k] = currents[0]*1.0;
               }
           }
